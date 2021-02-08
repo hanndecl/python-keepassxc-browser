@@ -1,24 +1,25 @@
 #!/usr/bin/python3
 
-import sys
-import os
-import re
-import subprocess
 import argparse
 import json
+import os
+import subprocess
+import sys
 import tldextract
+
 from . import protocol as kpp
 
 
 def find_pass_candidates(domain, connection, auth_id):
     try:
-        candidates = connection.get_logins(auth_id,"https://"+domain)
+        candidates = connection.get_logins(auth_id, "https://" + domain)
     except kpp.ProtocolError as e:
         print("failure: KeePassXC protocol error:", e, file=sys.stderr)
         sys.exit(1)
 
     return {
-        "%s [%s]" % (entry["name"], entry["login"]): (entry["name"], entry["login"], entry["password"]) for entry in candidates
+        "%s [%s]" % (entry["name"], entry["login"]): (entry["name"], entry["login"], entry["password"]) for entry in
+        candidates
     }
 
 
@@ -77,7 +78,7 @@ def fetch_candidates(url, auth_id, keyfile):
         registered_domain = '.'.join(i for i in extract_result[1:] if i)
     else:
         if extract_result.ipv4 == "":
-            print("failure: Format of URL '%s' is invalid!" % arguments.url, file=sys.stderr)
+            print("failure: Format of URL '%s' is invalid!" % url, file=sys.stderr)
             sys.exit(1)
         fqdn = ""
         registered_domain = ""
@@ -88,7 +89,7 @@ def fetch_candidates(url, auth_id, keyfile):
             break
     else:
         if len(candidates) == 0:
-            print("failure: no pass candidates for URL '%s' found!" % arguments.url, file=sys.stderr)
+            print("failure: no pass candidates for URL '%s' found!" % url, file=sys.stderr)
             sys.exit(1)
 
     return candidates
@@ -105,11 +106,11 @@ def main():
                                  help='Command used to select from multiple entries (dmenu-compatible)')
     argument_parser.add_argument('--always-select', '-A', action="store_true",
                                  help='run selector command even if there is only one candidate')
-    argument_parser.add_argument('--format', '-f', choices=("text","text-zero","json"), default='text',
+    argument_parser.add_argument('--format', '-f', choices=("text", "text-zero", "json"), default='text',
                                  help="Kind of output ('text-zero' means zero-terminated textual output)")
     argument_parser.add_argument('--all-candidates', '-a', action='store_true',
                                  help='Output all candidates (do not ask for selection)')
-    argument_parser.add_argument('--output', '-o', choices=("password","username","both"), default='both',
+    argument_parser.add_argument('--output', '-o', choices=("password", "username", "both"), default='both',
                                  help='Which information to include in the output')
     argument_parser.add_argument('--output-no-title', '-T', action='store_true',
                                  help='Do not include title field in output')
@@ -126,8 +127,8 @@ def main():
 
     terminator = "\n" if arguments.format == "text" else "\0"
 
-    def print_text_entry(entry):
-        title, username, password = entry
+    def print_text_entry(print_entry):
+        title, username, password = print_entry
         if output_prefix:
             if output_title:
                 print("title", title, end=terminator)
@@ -143,8 +144,8 @@ def main():
             if output_password:
                 print(password, end=terminator)
 
-    def get_dict_entry(entry):
-        title, username, password = entry
+    def get_dict_entry(print_entry):
+        title, username, password = print_entry
         result = {}
         if output_title:
             result["title"] = title
@@ -161,7 +162,7 @@ def main():
         elif arguments.format == "json":
             output = []
             for entry in sorted(candidates.values()):
-                output.append( get_dict_entry(entry) )
+                output.append(get_dict_entry(entry))
             json.dump(output, sys.stdout)
     else:
         if len(candidates) == 1 and not arguments.always_select:
