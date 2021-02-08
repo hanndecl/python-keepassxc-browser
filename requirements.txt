@@ -1,0 +1,2 @@
+tldextract >= 3.1.0
+pysodium>=0.7.7
